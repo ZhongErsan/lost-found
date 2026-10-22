@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#235747">
+    <meta name="app-base" content="/" th:content="@{/}">
+    <meta name="description" content="失物招领智能助手，通过对话登记丢失或拾到的物品，让每一份遗失都有被找回的可能。">
+    <title>寻物 · 失物招领助手</title>
+    <link rel="stylesheet" href="/css/index.css" th:href="@{/css/index.css}">
+    <script src="/js/auth.js" th:src="@{/js/auth.js}" defer></script>
+    <script src="/js/item-images.js" th:src="@{/js/item-images.js}" defer></script>
+    <script src="/js/claims.js" th:src="@{/js/claims.js}" defer></script>
+    <script src="/js/chat-events.js" th:src="@{/js/chat-events.js}" defer></script>
+    <script src="/js/index.js" th:src="@{/js/index.js}" defer></script>
+</head>
+<body>
+<svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/><path d="m20 2 .8 2.2L23 5l-2.2.8L20 8l-.8-2.2L17 5l2.2-.8L20 2Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 20l1-4.5a8.5 8.5 0 1 1 16-4Z"/><path d="M8 10h8M8 14h5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="14" rx="3"/><path d="M9 7V5a3 3 0 0 1 6 0v2M9 12h6"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8l9-5ZM3 8l9 5 9-5M12 13v9M7.5 5.5l9 5"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6ZM14 3v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 4S5 1 4 12a7 7 0 0 0 7 8C22 19 20 4 20 4ZM4 21 16 9"/></symbol>
+</svg>
+
+<section class="auth-gate" id="auth-gate" aria-labelledby="auth-gate-title" aria-live="polite">
+    <span class="auth-gate-mark" aria-hidden="true">寻</span>
+    <h1 id="auth-gate-title">正在确认登录状态</h1>
+    <p id="auth-gate-message">稍等片刻，即可进入寻物工作台。</p>
+    <button type="button" class="primary-button" id="auth-retry" hidden>重新检查</button>
+    <a href="/login" th:href="@{/login}" id="auth-login-link" hidden>返回登录页</a>
+</section>
+<noscript><p class="auth-gate">请启用浏览器 JavaScript，以使用登录和对话功能。</p></noscript>
+<div class="app-shell" id="app-shell" hidden>
+    <aside class="sidebar" aria-label="侧边栏">
+        <a class="brand" href="/" th:href="@{/}" aria-label="寻物首页"><span class="brand-icon"><svg class="icon"><use href="#i-search"/></svg></span><span>寻物<span class="brand-en">LOST & FOUND</span></span></a>
+        <button class="new-chat" id="new-chat"><svg class="icon"><use href="#i-plus"/></svg>开启新对话<span class="key-hint">↗</span></button>
+        <div class="nav-label">工作台 <span>WORKSPACE</span></div>
+        <nav class="main-nav" aria-label="物品服务">
+            <button class="nav-item" data-action="register"><svg class="icon"><use href="#i-note"/></svg>丢失物品登记</button>
+            <button class="nav-item" data-action="found"><svg class="icon"><use href="#i-box"/></svg>拾到物品登记</button>
+            <button class="nav-item" data-action="search"><svg class="icon"><use href="#i-search"/></svg>失物查询</button>
+            <button class="nav-item" id="claims-open"><svg class="icon"><use href="#i-check"/></svg>认领与归还</button>
+        </nav>
+        <div class="history-heading"><span class="nav-label">历史对话</span><svg class="icon"><use href="#i-clock"/></svg></div>
+        <div class="session-list" id="session-list" aria-label="对话列表"></div>
+        <div class="sidebar-bottom">
+            <div class="kindness-card"><svg class="icon"><use href="#i-leaf"/></svg><p>每一件失物，<br>都在等待一次重逢。</p><span>让善意，有迹可循。</span></div>
+            <button class="help-link" data-action="help"><svg class="icon"><use href="#i-info"/></svg>使用帮助<svg class="icon small"><use href="#i-arrow"/></svg></button>
+            <div class="sidebar-footer"><span class="tiny-logo">寻</span><span>失物招领服务平台<small>把遗失，变成重逢</small></span><span class="version">v1.0</span></div>
+        </div>
+    </aside>
+
+    <main class="main-content" id="assistant">
+        <header class="topbar"><div class="breadcrumb">寻物服务<span>/</span><strong id="active-service-title">丢失物品登记</strong></div><div class="topbar-right"><span class="service-tag"><span></span>物品服务工作台</span><div class="account-summary"><span class="avatar-small" id="user-avatar" aria-hidden="true"></span><span class="account-name" id="current-user-name"></span><span class="account-role" id="current-user-role"></span></div><button type="button" class="logout-button" id="logout-button">退出登录</button></div></header>
+        <div class="workspace">
+            <section class="hero" aria-labelledby="page-title">
+                <div class="hero-copy"><div class="eyebrow"><span></span>A LITTLE HELP, A HAPPY REUNION</div><h1 id="page-title"><span id="hero-title-text" class="hero-title-text">找回物品，也找回</span><span id="hero-title-accent">安心。</span></h1><p id="hero-description">不必独自着急。告诉我发生了什么，让我们一起，从一条线索开始。</p><div class="hero-features"><span><svg class="icon"><use href="#i-chat"/></svg>自然对话登记</span><i></i><span><svg class="icon"><use href="#i-note"/></svg>逐步补全信息</span><i></i><span><svg class="icon"><use href="#i-shield"/></svg>用心记录每条线索</span></div></div>
+                <svg class="hero-art" viewBox="0 0 340 210" fill="none" role="img" aria-label="放大镜与失物登记卡片的插画">
+                    <ellipse cx="180" cy="184" rx="127" ry="12" fill="#DCE7DC"/>
+                    <circle cx="195" cy="96" r="82" fill="#E1EBDC"/>
+                    <circle cx="275" cy="41" r="5" fill="#B8CDB3"/><path d="M71 59v12m-6-6h12M294 132v10m-5-5h10" stroke="#86A18A" stroke-width="2" stroke-linecap="round"/>
+                    <g transform="rotate(-9 160 110)"><rect x="89" y="37" width="128" height="140" rx="12" fill="#ADC1A5"/><rect x="80" y="30" width="128" height="140" rx="12" fill="#FFFEF8" stroke="#D0DBCC"/><rect x="102" y="50" width="40" height="6" rx="3" fill="#C4D6BF"/><path d="M102 135h74m-74 13h47" stroke="#D4DDCE" stroke-width="5" stroke-linecap="round"/><rect x="117" y="80" width="46" height="35" rx="6" fill="#D6B891"/><path d="M130 80v-7a10 10 0 0 1 20 0v7" stroke="#8C7051" stroke-width="4"/><path d="M137 98h7" stroke="#FFFBF1" stroke-width="3" stroke-linecap="round"/></g>
+                    <path d="m233 130 36 37" stroke="#244E40" stroke-width="18" stroke-linecap="round"/><path d="m240 140 24 25" stroke="#547360" stroke-width="4" stroke-linecap="round"/><circle cx="212" cy="107" r="41" fill="#F8FCF5" fill-opacity=".65" stroke="#345E4A" stroke-width="8"/><path d="M186 101a27 27 0 0 1 20-20" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                    <rect x="235" y="36" width="51" height="39" rx="11" fill="#FCFBEE" stroke="#D4DDC8"/><path d="m250 54 7 7 13-14" stroke="#6A8C60" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M62 177c-9-19-8-36 5-49 13 16 13 33-5 49Z" fill="#9BB893"/><path d="M63 177c1-24 11-35 26-37-1 19-10 31-26 37Z" fill="#BDCFAC"/><path d="m63 177 3-35" stroke="#658064" stroke-width="2"/>
+                </svg>
+            </section>
+
+            <div class="content-grid">
+                <section class="chat-panel" aria-labelledby="chat-heading">
+                    <header class="chat-header"><div class="assistant-mark"><svg class="icon"><use href="#i-spark"/></svg></div><div><h2 id="chat-heading">补充登记信息<span>AI</span></h2><p>需要补充细节时，可以继续和小助手对话</p></div><div class="chat-tools"><span class="chat-status" id="chat-status">准备就绪</span><button class="icon-button" id="export-chat" aria-label="下载当前对话" title="下载当前对话"><svg class="icon"><use href="#i-download"/></svg></button></div></header>
+                    <div class="registration-toolbar">
+                        <div class="registration-modes" role="group" aria-label="选择登记类型">
+                            <button type="button" class="mode-button selected" data-mode="lost" aria-pressed="true"><svg class="icon"><use href="#i-bag"/></svg>丢失登记</button>
+                            <button type="button" class="mode-button" data-mode="found" aria-pressed="false"><svg class="icon"><use href="#i-box"/></svg>拾物登记</button>
+                            <button type="button" class="mode-button" data-mode="search" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg>失物查询</button>
+                        </div>
+                        <button type="button" class="quick-register" id="quick-register" data-action="register">填写登记表<svg class="icon"><use href="#i-arrow"/></svg></button>
+                    </div>
+                    <div class="history-controls">
+                        <div id="mode-backfill" hidden><p>此旧会话尚未设置业务模式。请先阅读历史记录，再选择；保存后不能切换。</p><label>会话模式 <select id="legacy-mode"><option value="lost">丢失登记</option><option value="found">拾物登记</option><option value="search">失物查询</option></select></label> <button type="button" id="mode-save">保存模式</button></div>
+                        <span id="history-message-status" role="status"></span><button type="button" id="history-retry" hidden>重试读取记录</button><button type="button" id="history-older" hidden>加载更早消息</button>
+                    </div>
+                    <div class="chat-body" id="chat-body" role="log" aria-label="与寻物助手的对话" aria-live="polite" aria-relevant="additions text"></div>
+                    <div class="composer-area">
+                        <div class="registration-photo-state" id="registration-photo-state" hidden>
+                            <img id="registration-photo-thumbnail" alt="本次登记的物品照片">
+                            <div class="registration-photo-copy"><span id="registration-photo-name"></span><p id="registration-photo-status" role="status" aria-live="polite"></p></div>
+                            <button type="button" id="registration-photo-retry" hidden><svg class="icon"><use href="#i-up"/></svg>重试上传</button>
+                            <button type="button" class="icon-button" id="registration-photo-remove" aria-label="移除待上传照片" title="移除待上传照片"><svg class="icon"><use href="#i-close"/></svg></button>
+                        </div>
+                        <div class="followup-actions"><button type="button" id="history-open">历史对话</button><button type="button" data-action="supplement">补充我的登记</button><button type="button" id="confirm-details">确认以上登记信息</button></div>
+                        <div class="prompt-chips" aria-label="常用开场白"><button data-prompt="我丢失了一部手机，想登记失物信息。">手机丢了</button><button data-prompt="我的钥匙丢了，想登记失物信息。">找不到钥匙</button><button data-prompt="我丢失了一个背包，想登记失物信息。">背包遗失</button></div>
+                        <form class="composer" id="chat-form"><label class="sr-only" for="message-input">输入消息</label><textarea id="message-input" rows="2" maxlength="1500" placeholder="说说你丢失的物品，比如：我在图书馆丢了一个黑色背包……" required></textarea><div class="composer-bottom"><span><svg class="icon"><use href="#i-spark"/></svg>想到多少就说多少，我会帮你补全</span><button class="send-button" id="send-button" type="submit" aria-label="发送消息" disabled><svg class="icon"><use href="#i-up"/></svg></button></div></form>
+                        <div class="composer-footnote"><span>Enter 发送 · Shift + Enter 换行</span><span id="char-count">0 / 1500</span></div>
+                        <p class="ai-note">新增登记使用账号联系方式。请核对助手展示的内容后再确认；失物查询结果需进一步核实。</p>
+                    </div>
+                </section>
+
+                <aside class="guide-column" aria-label="登记指南">
+                    <section class="guide-card"><div class="section-kicker">GET STARTED <span>01 — 03</span></div><h2 id="guide-title">找回的第一步，<br>是留下线索。</h2><p class="guide-intro" id="guide-intro">不用一次说完，跟着小助手慢慢来。</p><ol class="steps"><li><span class="step-number">01</span><div><h3 id="guide-item-title">描述丢失的物品</h3><p>是什么？颜色、品牌或特别的标记？</p></div></li><li><span class="step-number">02</span><div><h3 id="guide-contact-title">核对账号联系方式</h3><p id="guide-contact-description">新增登记使用账号资料，无需重复填写。</p></div></li><li><span class="step-number">03</span><div><h3 id="guide-final-title">核对并完成登记</h3><p id="guide-final-description">补全信息，确认本次登记内容。</p></div></li></ol><button class="outline-button" id="guide-register" data-action="register"><span id="guide-register-label">快速填写登记信息</span><svg class="icon"><use href="#i-arrow"/></svg></button></section>
+                    <section class="tip-card"><div class="tip-heading"><span>✦</span><h3>多一点细节，多一份可能</h3></div><p>“黑色钱包”是一条线索，<br>“带有小熊挂件的黑色钱包”<br>会让它更容易被认出来。</p><div class="tip-tags"><span>颜色 / 品牌</span><span>特殊标记</span><span>物品特征</span></div></section>
+                    <div class="privacy-note"><svg class="icon"><use href="#i-shield"/></svg><p>请仅提供登记所需的联系信息，<br>不要发送密码、验证码或证件照片。</p></div>
+                </aside>
+            </div>
+            <footer class="page-footer"><span>寻物 · 让每一份遗失，都有重逢的可能。</span><span>LOST SOMETHING. FIND A LITTLE HOPE.</span></footer>
+        </div>
+    </main>
+</div>
+
+<dialog class="modal found-modal" id="found-dialog" aria-labelledby="found-title">
+    <form id="found-form">
+        <div class="modal-heading"><span class="modal-icon"><svg class="icon"><use href="#i-box"/></svg></span><button class="icon-button" type="button" data-close="found-dialog" aria-label="关闭拾物登记表单"><svg class="icon"><use href="#i-close"/></svg></button></div>
+        <div class="eyebrow">A KIND ACT, A WAY HOME</div>
+        <h2 id="found-title">让拾到的物品，找到归处。</h2>
+        <p class="modal-description">谢谢你的善意。填写物品线索，联系人使用当前登录账号资料，由助手展示后请你确认。</p>
+        <p class="account-contact-note">联系人使用当前登录账号的姓名和手机号，无需在这里重复填写。</p>
+        <label class="field-label">拾到的物品<input name="item" maxlength="60" placeholder="例如：钱包、钥匙、耳机" required></label>
+        <label class="field-label">物品特征<textarea name="features" rows="3" maxlength="500" placeholder="例如：黑色皮质钱包，拉链上有一个小熊挂件；不确定的细节可以稍后补充。"></textarea></label>
+        <fieldset class="photo-field"><legend>物品照片 <span>选填 · JPG / PNG</span></legend><label class="photo-picker" for="found-photo"><svg class="icon"><use href="#i-plus"/></svg><span>选择一张照片</span><small>单张不超过 5MB</small><input id="found-photo" class="photo-input" name="photo" type="file" accept="image/jpeg,image/png" aria-describedby="found-photo-feedback found-photo-note"></label><figure class="registration-photo-preview" data-photo-preview="found" hidden><img alt="拾到物品照片预览"><figcaption></figcaption><button type="button" data-photo-remove="found">移除照片</button></figure><p class="photo-feedback" id="found-photo-feedback" data-photo-feedback="found" role="status" aria-live="polite" hidden></p><p class="photo-save-note" id="found-photo-note">确认登记后保存照片。请勿上传证件、银行卡等敏感信息。</p></fieldset>
+        <div class="found-reminder"><svg class="icon"><use href="#i-shield"/></svg><p>请先妥善保管物品或交给现场工作人员。拾得人联系方式使用当前账号资料。</p></div>
+        <p class="form-note"><svg class="icon"><use href="#i-info"/></svg>提交后请核对助手回复，确认是否完成拾物登记。</p>
+        <button class="primary-button" type="submit">提交拾物信息<svg class="icon"><use href="#i-arrow"/></svg></button>
+    </form>
+</dialog>
+<dialog class="modal" id="register-dialog" aria-labelledby="register-title"><form id="register-form"><div class="modal-heading"><span class="modal-icon"><svg class="icon"><use href="#i-note"/></svg></span><button class="icon-button" type="button" data-close="register-dialog" aria-label="关闭登记表单"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="eyebrow">LEAVE A CLUE</div><h2 id="register-title">登记丢失物品</h2><p class="modal-description">填写物品信息和照片，后续可在对话中补充线索。</p><p class="account-contact-note">联系人使用当前登录账号的姓名和手机号，无需重复填写。</p><label class="field-label">丢失的物品<input name="item" maxlength="60" placeholder="例如：钱包、手机、背包" required></label><label class="field-label">物品特征<textarea name="features" rows="3" maxlength="500" placeholder="描述颜色、品牌、材质或特殊标记；暂时想不起来也没关系。"></textarea></label><fieldset class="photo-field"><legend>物品照片 <span>选填 · JPG / PNG</span></legend><label class="photo-picker" for="lost-photo"><svg class="icon"><use href="#i-plus"/></svg><span>选择一张照片</span><small>单张不超过 5MB</small><input id="lost-photo" class="photo-input" name="photo" type="file" accept="image/jpeg,image/png" aria-describedby="lost-photo-feedback lost-photo-note"></label><figure class="registration-photo-preview" data-photo-preview="lost" hidden><img alt="丢失物品照片预览"><figcaption></figcaption><button type="button" data-photo-remove="lost">移除照片</button></figure><p class="photo-feedback" id="lost-photo-feedback" data-photo-feedback="lost" role="status" aria-live="polite" hidden></p><p class="photo-save-note" id="lost-photo-note">确认登记后保存照片。请勿上传证件、银行卡等敏感信息。</p></fieldset><p class="form-note"><svg class="icon"><use href="#i-info"/></svg>发送后请核对助手回复，确认登记信息。</p><button class="primary-button" type="submit">发送登记信息<svg class="icon"><use href="#i-arrow"/></svg></button></form></dialog>
+<dialog class="modal" id="search-dialog" aria-labelledby="search-title">
+    <form id="search-form">
+        <div class="modal-heading"><span class="modal-icon"><svg class="icon"><use href="#i-search"/></svg></span><button class="icon-button" type="button" data-close="search-dialog" aria-label="关闭失物查询"><svg class="icon"><use href="#i-close"/></svg></button></div>
+        <div class="eyebrow">FIND A MATCH</div><h2 id="search-title">找找有没有你的物品</h2>
+        <p class="modal-description">根据物品名称和特征查询已登记的拾物线索。匹配结果需要进一步核实。</p>
+        <label class="field-label">丢失的物品<input name="item" maxlength="60" placeholder="例如：黑色钱包" required></label>
+        <label class="field-label">可识别的特征<textarea name="features" rows="3" maxlength="500" placeholder="颜色、品牌、挂件或特殊标记，越具体越方便匹配。" required></textarea></label>
+        <button class="primary-button" type="submit">查询物品线索<svg class="icon"><use href="#i-search"/></svg></button>
+    </form>
+</dialog>
+<dialog class="modal" id="supplement-dialog" aria-labelledby="supplement-title">
+    <form id="supplement-form">
+        <div class="modal-heading"><span class="modal-icon"><svg class="icon"><use href="#i-note"/></svg></span><button class="icon-button" type="button" data-close="supplement-dialog" aria-label="关闭补充登记"><svg class="icon"><use href="#i-close"/></svg></button></div>
+        <h2 id="supplement-title">补充我的登记</h2><p class="modal-description">只修改本人已有登记。助手会查询目标记录，并请你核对修改内容。</p>
+        <label class="field-label">登记类型<select name="kind"><option value="lost">我丢失的物品</option><option value="found">我拾到的物品</option></select></label>
+        <label class="field-label">原登记物品<input name="item" maxlength="60" placeholder="物品名称及原有特征，帮助定位登记" required></label>
+        <label class="field-label">需要补充或修改的内容<textarea name="features" rows="3" maxlength="500" placeholder="例如：钱包拉链上还有一个蓝色挂件" required></textarea></label>
+        <p class="form-note">补充物品信息保留原联系人。若没有匹配记录，助手会继续向你确认。</p>
+        <button class="primary-button" type="submit">发送补充信息<svg class="icon"><use href="#i-arrow"/></svg></button>
+    </form>
+</dialog>
+<dialog class="modal info-modal" id="info-dialog" aria-labelledby="info-title"><div class="modal-heading"><span class="modal-icon"><svg class="icon"><use href="#i-info"/></svg></span><button class="icon-button" type="button" data-close="info-dialog" aria-label="关闭提示"><svg class="icon"><use href="#i-close"/></svg></button></div><h2 id="info-title"></h2><p id="info-content"></p><button class="primary-button" type="button" data-close="info-dialog">知道了<svg class="icon"><use href="#i-check"/></svg></button></dialog>
+<dialog class="modal workflow-modal" id="history-dialog" aria-labelledby="history-title">
+    <div class="modal-heading"><h2 id="history-title">历史对话</h2><button type="button" data-close="history-dialog">关闭</button></div>
+    <p class="form-note">恢复已保存的聊天记录。继续登记前请核对目标物品和编号。</p>
+    <div id="history-session-list"></div><p id="history-list-status" role="status"></p>
+    <button type="button" id="history-refresh">刷新列表</button> <button type="button" id="history-list-more">加载更多会话 / 重试</button>
+</dialog>
+<dialog class="modal workflow-modal" id="claims-dialog" aria-labelledby="claims-title">
+    <div class="modal-heading"><h2 id="claims-title">认领与归还</h2><button type="button" data-close="claims-dialog">关闭</button></div>
+    <div class="workflow-tabs"><button type="button" data-claim-tab="mine">我发起的</button><button type="button" data-claim-tab="incoming">我收到的</button><button type="button" id="claim-create-open">申请认领</button></div>
+    <p id="claim-feedback" role="status"></p><div id="claim-list"></div><button type="button" id="claim-more" hidden>加载更多申请</button>
+    <section id="claim-detail" hidden></section>
+    <form id="claim-create-form" hidden>
+        <p class="form-note">请使用查询结果中的拾物编号和本人丢失登记编号，核对后提交。</p>
+        <label class="field-label">拾物登记编号<input name="lostPropertyId" type="number" min="1" step="1" required></label>
+        <label class="field-label">我的丢失登记编号<input name="lostRegisterId" type="number" min="1" step="1" required></label>
+        <label class="field-label">认领依据<textarea name="verificationText" maxlength="1000" required placeholder="提供只有物主知道的特征，帮助拾得人核验。"></textarea></label>
+        <button type="submit" class="primary-button">提交认领申请</button>
+    </form>
+</dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

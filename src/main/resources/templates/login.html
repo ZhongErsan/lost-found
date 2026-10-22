@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#235747">
+    <meta name="app-base" content="/" th:content="@{/}">
+    <title>登录 · 寻物</title>
+    <link rel="stylesheet" href="/css/login.css" th:href="@{/css/login.css}">
+    <script src="/js/auth.js" th:src="@{/js/auth.js}" defer></script>
+    <script src="/js/login.js" th:src="@{/js/login.js}" defer></script>
+</head>
+<body>
+<main class="login-layout">
+    <section class="login-story" aria-labelledby="story-title">
+        <a class="brand" href="/login" th:href="@{/login}" aria-label="寻物登录页"><span class="brand-icon">寻</span><span>寻物<small>LOST &amp; FOUND</small></span></a>
+        <div class="story-copy"><p class="eyebrow">A LITTLE HELP, A HAPPY REUNION</p><h1 id="story-title">每一条线索，<br>都通向一次<span>重逢。</span></h1><p>丢了东西，别着急。<br>拾到物品，谢谢你的善意。<br>让我们一起，为遗失的物品找到归处。</p></div>
+        <div class="story-note"><span aria-hidden="true">✦</span> 记录一份线索，传递一份善意。</div>
+    </section>
+    <section class="login-panel" aria-labelledby="login-title">
+        <div class="login-card">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h2 id="login-title">欢迎来到寻物</h2>
+            <p class="login-description">登录后，和小助手一起留下重逢的线索。</p>
+            <form id="login-form" method="post" th:action="@{/api/auth/login}" action="/api/auth/login">
+                <label for="username">用户名</label>
+                <input id="username" name="username" autocomplete="username" maxlength="64" placeholder="请输入用户名" required autofocus>
+                <label for="password">密码</label>
+                <div class="password-field"><input id="password" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" required><button type="button" id="toggle-password" aria-label="显示密码" aria-pressed="false">显示</button></div>
+                <p class="form-feedback" id="login-feedback" role="status" aria-live="polite" hidden></p>
+                <button class="login-button" id="login-button" type="submit" disabled>登录并进入工作台 <span aria-hidden="true">→</span></button>
+            </form>
+            <noscript><p class="form-feedback">请启用浏览器 JavaScript 后再登录。</p></noscript>
+            <p class="account-help">还没有账号？<button type="button" class="text-button" id="show-register">注册账号</button><br>忘记密码请联系平台管理员。</p>
+            <section id="registration-panel" aria-labelledby="registration-title" hidden>
+                <h2 id="registration-title">创建寻物账号</h2>
+                <p class="login-description">登记时使用账号姓名和手机号，请填写真实可联系的信息。</p>
+                <form id="registration-form" method="post" action="/api/auth/register" th:action="@{/api/auth/register}">
+                    <label for="register-username">用户名</label>
+                    <input id="register-username" name="username" autocomplete="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9._\-]+" placeholder="3–32位字母、数字、点、下划线或连字符" required>
+                    <label for="register-name">真实姓名</label>
+                    <input id="register-name" name="realName" autocomplete="name" maxlength="50" required>
+                    <label for="register-phone">联系电话</label>
+                    <input id="register-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" placeholder="可包含国际区号，7–15位数字" required>
+                    <label for="register-password">密码</label>
+                    <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" aria-describedby="password-hint" required>
+                    <p class="field-hint" id="password-hint">8–72个字符，UTF-8编码不超过72字节。</p>
+                    <label for="register-confirm">确认密码</label>
+                    <input id="register-confirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+                    <p class="form-feedback" id="register-feedback" role="status" aria-live="polite" hidden></p>
+                    <button class="login-button" id="register-button" type="submit">注册账号 →</button>
+                </form>
+                <p class="account-help">已有账号？<button type="button" class="text-button" id="show-login">返回登录</button></p>
+            </section>
+        </div>
+        <footer>寻物 · 把遗失，变成重逢</footer>
+    </section>
+</main>
+</body>
+</html>
